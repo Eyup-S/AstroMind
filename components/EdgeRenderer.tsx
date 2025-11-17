@@ -7,38 +7,50 @@ interface EdgeRendererProps {
   edges: MindMapEdge[];
   nodes: MindMapNode[];
   camera: { x: number; y: number; zoom: number };
+  onEdgeClick?: (edgeId: string, position: { x: number; y: number }) => void;
 }
 
-export function EdgeRenderer({ edges, nodes, camera }: EdgeRendererProps) {
+export function EdgeRenderer({ edges, nodes, camera, onEdgeClick }: EdgeRendererProps) {
   const { selectedEdgeId, setSelectedEdge } = useMindMapStore();
 
   const getNodeCenter = (nodeId: string) => {
     const node = nodes.find((n) => n.id === nodeId);
     if (!node) return { x: 0, y: 0 };
 
-    // Approximate center of node (adjust based on node size)
+    // Center of circular node (140x140, so center is at +70, +70)
     return {
-      x: node.position.x + 100,
-      y: node.position.y + 30
+      x: node.position.x + 70,
+      y: node.position.y + 70
     };
   };
 
-  const createCurvedPath = (
+  // CURVED LINE CODE - COMMENTED OUT FOR NOW
+ const createCurvedPath = (
+   x1: number,
+   y1: number,
+   x2: number,
+   y2: number
+ ): string => {
+   const dx = x2 - x1;
+   const dy = y2 - y1;
+
+  //Control points for smooth Bezier curve
+   const cx1 = x1 + dx * 0.3;
+   const cy1 = y1;
+   const cx2 = x1 + dx * 0.7;
+   const cy2 = y2;
+
+   return `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`;
+ };
+
+  // Straight line between two points
+  const createStraightPath = (
     x1: number,
     y1: number,
     x2: number,
     y2: number
   ): string => {
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-
-    // Control points for quadratic curve
-    const cx1 = x1 + dx * 0.3;
-    const cy1 = y1;
-    const cx2 = x1 + dx * 0.7;
-    const cy2 = y2;
-
-    return `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`;
+    return `M ${x1} ${y1} L ${x2} ${y2}`;
   };
 
   return (
@@ -47,7 +59,8 @@ export function EdgeRenderer({ edges, nodes, camera }: EdgeRendererProps) {
       style={{
         width: '100%',
         height: '100%',
-        overflow: 'visible'
+        overflow: 'visible',
+        zIndex: 0
       }}
     >
       <defs>
@@ -82,15 +95,19 @@ export function EdgeRenderer({ edges, nodes, camera }: EdgeRendererProps) {
         </filter>
       </defs>
 
-      <g
-        transform={`translate(${camera.x}, ${camera.y}) scale(${camera.zoom})`}
-      >
+      <g>
         {edges.map((edge) => {
-          const from = getNodeCenter(edge.from);
-          const to = getNodeCenter(edge.to);
-          const isSelected = selectedEdgeId === edge.id;
+          const fromCenter = getNodeCenter(edge.from);
+          const toCenter = getNodeCenter(edge.to);
+          console.log("from to", fromCenter, toCenter)
 
-          const path = createCurvedPath(from.x, from.y, to.x, to.y);
+          const isSelected = selectedEdgeId === edge.id;
+          const path = createStraightPath(fromCenter.x, fromCenter.y, toCenter.x, toCenter.y);
+          const edgeColor = edge.color || '#8b5cf6';
+
+          // Calculate midpoint for color picker placement
+          const midX = (fromCenter.x + toCenter.x) / 2;
+          const midY = (fromCenter.y + toCenter.y) / 2;
 
           return (
             <g key={edge.id}>
@@ -104,6 +121,10 @@ export function EdgeRenderer({ edges, nodes, camera }: EdgeRendererProps) {
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedEdge(edge.id);
+                  // Call the onEdgeClick callback
+                  if (onEdgeClick) {
+                    onEdgeClick(edge.id, { x: e.clientX, y: e.clientY });
+                  }
                 }}
               />
 
@@ -111,11 +132,9 @@ export function EdgeRenderer({ edges, nodes, camera }: EdgeRendererProps) {
               <path
                 d={path}
                 fill="none"
-                stroke={isSelected ? '#ffffff' : '#8b5cf6'}
+                stroke={isSelected ? '#ffffff' : edgeColor}
                 strokeWidth={isSelected ? 3 : 2}
-                markerEnd={
-                  isSelected ? 'url(#arrowhead-selected)' : 'url(#arrowhead)'
-                }
+                //markerEnd={ isSelected ? 'url(#arrowhead-selected)' : 'url(#arrowhead)'}
                 filter={isSelected ? 'url(#glow)' : undefined}
                 className="pointer-events-none transition-all duration-200"
                 style={{

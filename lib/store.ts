@@ -31,6 +31,7 @@ interface MindMapStore extends AppState {
 
   // Edge actions
   addEdge: (from: string, to: string) => void;
+  updateEdge: (edgeId: string, updates: Partial<MindMapEdge>) => void;
   deleteEdge: (edgeId: string) => void;
   setSelectedEdge: (edgeId?: string) => void;
 
@@ -199,18 +200,32 @@ export const useMindMapStore = create<MindMapStore>((set, get) => {
 
     addEdge: (from, to) => {
       const state = get();
-      if (!state.currentMapId) return;
+      //console.log('addEdge called:', { from, to, currentMapId: state.currentMapId });
+
+      if (!state.currentMapId) {
+        console.warn('No current map ID');
+        return;
+      }
 
       // Prevent self-loops and duplicate edges
       const currentMap = state.maps.find((m) => m.id === state.currentMapId);
-      if (!currentMap) return;
+      if (!currentMap) {
+        console.warn('Current map not found');
+        return;
+      }
 
-      if (from === to) return; // No self-loops
+      if (from === to) {
+        console.warn('Cannot create self-loop');
+        return; // No self-loops
+      }
 
       const edgeExists = currentMap.edges.some(
         (edge) => edge.from === from && edge.to === to
       );
-      if (edgeExists) return;
+      if (edgeExists) {
+        console.warn('Edge already exists');
+        return;
+      }
 
       const newEdge: MindMapEdge = {
         id: uuidv4(),
@@ -218,12 +233,33 @@ export const useMindMapStore = create<MindMapStore>((set, get) => {
         to
       };
 
+      //console.log('Creating new edge:', newEdge);
+
       set((state) => ({
         maps: state.maps.map((map) =>
           map.id === state.currentMapId
             ? {
                 ...map,
                 edges: [...map.edges, newEdge],
+                updatedAt: Date.now()
+              }
+            : map
+        )
+      }));
+
+      get().persist();
+      //console.log('Edge created successfully');
+    },
+
+    updateEdge: (edgeId, updates) => {
+      set((state) => ({
+        maps: state.maps.map((map) =>
+          map.id === state.currentMapId
+            ? {
+                ...map,
+                edges: map.edges.map((edge) =>
+                  edge.id === edgeId ? { ...edge, ...updates } : edge
+                ),
                 updatedAt: Date.now()
               }
             : map
@@ -264,6 +300,7 @@ export const useMindMapStore = create<MindMapStore>((set, get) => {
     },
 
     setConnectionSource: (nodeId) => {
+      console.log('Setting connection source:', nodeId);
       set({
         connectionState: { mode: 'selecting-target', sourceNodeId: nodeId }
       });
@@ -272,6 +309,8 @@ export const useMindMapStore = create<MindMapStore>((set, get) => {
     completeConnection: (targetNodeId) => {
       const state = get();
       const sourceId = state.connectionState.sourceNodeId;
+
+      console.log('Completing connection:', { sourceId, targetNodeId });
 
       if (sourceId) {
         get().addEdge(sourceId, targetNodeId);

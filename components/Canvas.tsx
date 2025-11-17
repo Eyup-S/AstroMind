@@ -6,49 +6,57 @@ import { useMindMapStore } from '@/lib/store';
 import { Node } from './Node';
 import { EdgeRenderer } from './EdgeRenderer';
 import { NodeModal } from './NodeModal';
-import { usePanZoom } from '@/hooks/usePanZoom';
+import { EdgeColorPicker } from './EdgeColorPicker';
 
 interface CanvasProps {
   className?: string;
+  onNodeEdit?: (node: MindMapNode) => void;
 }
 
-export function Canvas({ className }: CanvasProps) {
+export function Canvas({ className, onNodeEdit }: CanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
+  const constraintsRef = useRef<HTMLDivElement>(null);
   const [editingNode, setEditingNode] = useState<MindMapNode | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [edgeColorPicker, setEdgeColorPicker] = useState<{
+    edgeId: string;
+    position: { x: number; y: number };
+  } | null>(null);
 
-  const { maps, currentMapId, addNode, setSelectedNode, connectionState } =
+  const { maps, currentMapId, addNode, setSelectedNode, connectionState, updateEdge } =
     useMindMapStore();
 
   const currentMap = maps.find((m) => m.id === currentMapId);
 
-  const { camera, handleWheel, handleMouseDown, handleMouseMove, handleMouseUp } =
-    usePanZoom();
-
+  // Handle zoom with mouse wheel
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = -e.deltaY * 0.001;
+      setZoom((prev) => Math.min(Math.max(prev + delta, 0.3), 2));
+    };
+
     canvas.addEventListener('wheel', handleWheel, { passive: false });
-    canvas.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
 
     return () => {
       canvas.removeEventListener('wheel', handleWheel);
-      canvas.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [handleWheel, handleMouseDown, handleMouseMove, handleMouseUp]);
+  }, []);
 
   const handleDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('canvas-background')) {
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
 
-      // Calculate position relative to canvas, accounting for camera transform
-      const x = (e.clientX - rect.left - camera.x) / camera.zoom;
-      const y = (e.clientY - rect.top - camera.y) / camera.zoom;
+      // Calculate position relative to canvas
+      const x = (e.clientX - rect.left) / zoom;
+      const y = (e.clientY - rect.top) / zoom;
 
       addNode({
         title: 'New Node',
@@ -56,7 +64,7 @@ export function Canvas({ className }: CanvasProps) {
         details: '',
         color: '#8b5cf6',
         variant: 'default',
-        position: { x, y }
+        position: { x: x - 70, y: y - 70 } // Center on click position
       });
     }
   };
@@ -66,6 +74,30 @@ export function Canvas({ className }: CanvasProps) {
     if (connectionState.mode === 'idle') {
       setSelectedNode(undefined);
     }
+    // This will also close any open tooltips since nodes handle their own tooltip state
+  };
+
+  // Panning handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // Only pan with middle mouse button or space + left click
+    if (e.button === 1 || (e.button === 0 && e.shiftKey)) {
+      e.preventDefault();
+      setIsPanning(true);
+      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isPanning) {
+      setPan({
+        x: e.clientX - panStart.x,
+        y: e.clientY - panStart.y,
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsPanning(false);
   };
 
   if (!currentMap) {
@@ -85,11 +117,15 @@ export function Canvas({ className }: CanvasProps) {
     <>
       <div
         ref={canvasRef}
-        className={`${className} relative overflow-hidden`}
+        className={`${className} relative overflow-hidden bg-transparent`}
         onDoubleClick={handleDoubleClick}
         onClick={handleCanvasClick}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
         style={{
-          cursor: connectionState.mode !== 'idle' ? 'crosshair' : 'default'
+          cursor: isPanning ? 'grabbing' : connectionState.mode !== 'idle' ? 'crosshair' : 'grab'
         }}
       >
         {/* Connection mode indicator */}
@@ -101,34 +137,66 @@ export function Canvas({ className }: CanvasProps) {
           </div>
         )}
 
-        {/* Canvas background */}
-        <div className="canvas-background absolute inset-0 bg-transparent" />
+        {/* Canvas content with zoom and pan */}
+        <div
+          ref={constraintsRef}
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: 'top left',
+            width: `${100 / zoom}%`,
+            height: `${100 / zoom}%`,
+          }}
+          className="relative"
+        >
+          {/* Canvas background */}
+          <div className="canvas-background absolute inset-0 bg-transparent" />
 
-        {/* Edges */}
-        <EdgeRenderer
-          edges={currentMap.edges}
-          nodes={currentMap.nodes}
-          camera={camera}
-        />
-
-        {/* Nodes */}
-        {currentMap.nodes.map((node) => (
-          <Node
-            key={node.id}
-            node={node}
-            onEdit={setEditingNode}
-            camera={camera}
+          {/* Edges */}
+          <EdgeRenderer
+            edges={currentMap.edges}
+            nodes={currentMap.nodes}
+            camera={{ x: 0, y: 0, zoom }}
+            onEdgeClick={(edgeId, position) => setEdgeColorPicker({ edgeId, position })}
           />
-        ))}
 
-        {/* Zoom level indicator */}
-        <div className="absolute bottom-4 right-4 bg-slate-900/80 backdrop-blur-sm border border-purple-500/30 rounded-lg px-4 py-2 text-purple-200 text-sm font-mono">
-          Zoom: {Math.round(camera.zoom * 100)}%
+          {/* Nodes */}
+          {currentMap.nodes.map((node) => (
+            <Node
+              key={node.id}
+              node={node}
+              onEdit={setEditingNode}
+              camera={{ x: 0, y: 0, zoom }}
+              dragConstraints={constraintsRef}
+            />
+          ))}
+        </div>
+
+        {/* Zoom and Pan indicators */}
+        <div className="absolute bottom-4 right-4 space-y-2 z-50">
+          <div className="bg-slate-900/80 backdrop-blur-sm border border-purple-500/30 rounded-lg px-4 py-2 text-purple-200 text-sm font-mono">
+            Zoom: {Math.round(zoom * 100)}%
+          </div>
+          <div className="bg-slate-900/80 backdrop-blur-sm border border-purple-500/30 rounded-lg px-3 py-2 text-purple-300/70 text-xs">
+            Shift+Drag or Middle Click to Pan
+          </div>
         </div>
       </div>
 
       {/* Edit Modal */}
       <NodeModal node={editingNode} onClose={() => setEditingNode(null)} />
+
+      {/* Edge Color Picker */}
+      {edgeColorPicker && (
+        <EdgeColorPicker
+          isVisible={true}
+          position={edgeColorPicker.position}
+          currentColor={currentMap?.edges.find(e => e.id === edgeColorPicker.edgeId)?.color || '#8b5cf6'}
+          onColorChange={(color) => {
+            updateEdge(edgeColorPicker.edgeId, { color });
+          }}
+          onClose={() => setEdgeColorPicker(null)}
+        />
+      )}
     </>
   );
 }

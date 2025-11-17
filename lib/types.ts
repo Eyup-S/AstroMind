@@ -16,6 +16,7 @@ export interface MindMapEdge {
   id: string;
   from: string; // node id
   to: string;   // node id
+  color?: string; // edge color (optional, defaults to purple)
 }
 
 export interface MindMap {

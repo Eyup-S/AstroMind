@@ -5,7 +5,7 @@ interface ColorPickerProps {
   onChange: (color: string) => void;
 }
 
-const PRESET_COLORS = [
+export const PRESET_COLORS = [
   '#8b5cf6', // purple
   '#3b82f6', // blue
   '#06b6d4', // cyan
@@ -15,7 +15,7 @@ const PRESET_COLORS = [
   '#ef4444', // red
   '#ec4899', // pink
   '#6366f1', // indigo
-  '#8b5cf6', // violet
+  '#7c3aed', // violet
   '#a855f7', // purple-500
   '#d946ef'  // fuchsia
 ];
