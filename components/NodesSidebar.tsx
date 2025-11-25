@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMindMapStore } from '@/lib/store';
+import { useSettingsStore } from '@/lib/settingsStore';
 import { PRESET_COLORS } from './ui/ColorPicker';
 import { useState } from 'react';
 
@@ -13,8 +14,13 @@ interface NodesSidebarProps {
 
 export function NodesSidebar({ isOpen, onClose, onEditNode }: NodesSidebarProps) {
   const { maps, currentMapId, selectedNodeId, setSelectedNode, deleteNode } = useMindMapStore();
-  const [defaultColor, setDefaultColor] = useState('#8b5cf6');
+  const { defaultEdgeColor, setDefaultEdgeColor } = useSettingsStore();
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  // Get default node color from localStorage
+  const defaultNodeColor = typeof window !== 'undefined'
+    ? localStorage.getItem('defaultNodeColor') || '#8b5cf6'
+    : '#8b5cf6';
 
   const currentMap = maps.find((m) => m.id === currentMapId);
 
@@ -34,9 +40,8 @@ export function NodesSidebar({ isOpen, onClose, onEditNode }: NodesSidebarProps)
     setSelectedNode(nodeId);
   };
 
-  // Store default color in localStorage
-  const handleColorChange = (color: string) => {
-    setDefaultColor(color);
+  // Store default node color in localStorage
+  const handleNodeColorChange = (color: string) => {
     localStorage.setItem('defaultNodeColor', color);
   };
 
@@ -76,22 +81,45 @@ export function NodesSidebar({ isOpen, onClose, onEditNode }: NodesSidebarProps)
             </div>
 
             {/* Settings Section */}
-            <div className="p-4 border-b border-purple-500/20">
-              <h3 className="text-sm font-medium text-purple-300 mb-3">Default Node Color</h3>
-              <div className="grid grid-cols-6 gap-2">
-                {PRESET_COLORS.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => handleColorChange(color)}
-                    className={`w-8 h-8 rounded-lg transition-all duration-200 ${
-                      defaultColor === color
-                        ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110'
-                        : 'hover:scale-105'
-                    }`}
-                    style={{ backgroundColor: color }}
-                    aria-label={`Set default color to ${color}`}
-                  />
-                ))}
+            <div className="p-4 border-b border-purple-500/20 space-y-4">
+              {/* Default Node Color */}
+              <div>
+                <h3 className="text-sm font-medium text-purple-300 mb-3">Default Node Color</h3>
+                <div className="grid grid-cols-6 gap-2">
+                  {PRESET_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => handleNodeColorChange(color)}
+                      className={`w-8 h-8 rounded-lg transition-all duration-200 ${
+                        defaultNodeColor === color
+                          ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110'
+                          : 'hover:scale-105'
+                      }`}
+                      style={{ backgroundColor: color }}
+                      aria-label={`Set default node color to ${color}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Default Edge Color */}
+              <div>
+                <h3 className="text-sm font-medium text-purple-300 mb-3">Default Connection Color</h3>
+                <div className="grid grid-cols-6 gap-2">
+                  {PRESET_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setDefaultEdgeColor(color)}
+                      className={`w-8 h-8 rounded-lg transition-all duration-200 ${
+                        defaultEdgeColor === color
+                          ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110'
+                          : 'hover:scale-105'
+                      }`}
+                      style={{ backgroundColor: color }}
+                      aria-label={`Set default edge color to ${color}`}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
 

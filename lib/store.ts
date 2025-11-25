@@ -227,10 +227,16 @@ export const useMindMapStore = create<MindMapStore>((set, get) => {
         return;
       }
 
+      // Get default edge color from settings
+      const defaultEdgeColor = typeof window !== 'undefined'
+        ? JSON.parse(localStorage.getItem('mindmap-settings') || '{}').defaultEdgeColor || '#8b5cf6'
+        : '#8b5cf6';
+
       const newEdge: MindMapEdge = {
         id: uuidv4(),
         from,
-        to
+        to,
+        color: defaultEdgeColor
       };
 
       //console.log('Creating new edge:', newEdge);

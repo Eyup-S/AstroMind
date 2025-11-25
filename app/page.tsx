@@ -2,22 +2,34 @@
 
 import { useEffect, useState } from 'react';
 import { SpaceBackground } from '@/components/SpaceBackground';
+import { GradientBackground } from '@/components/backgrounds/GradientBackground';
+import { GridBackground } from '@/components/backgrounds/GridBackground';
+import { ParticlesBackground } from '@/components/backgrounds/ParticlesBackground';
 import { Toolbar } from '@/components/Toolbar';
 import { Canvas } from '@/components/Canvas';
 import { MindMapDrawer } from '@/components/MindMapDrawer';
 import { NodesSidebar } from '@/components/NodesSidebar';
 import { NodeModal } from '@/components/NodeModal';
+import { SettingsModal } from '@/components/SettingsModal';
 import { useMindMapStore } from '@/lib/store';
+import { useSettingsStore } from '@/lib/settingsStore';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 export default function Home() {
   const { maps, createNewMap } = useMindMapStore();
+  const { background, loadSettings } = useSettingsStore();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isNodesSidebarOpen, setIsNodesSidebarOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
 
   // Enable keyboard shortcuts
   useKeyboardShortcuts();
+
+  // Load settings on mount
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
 
   // Create initial map with a centered node if none exists
   useEffect(() => {
@@ -56,12 +68,31 @@ export default function Home() {
     ? currentMap?.nodes.find(n => n.id === editingNodeId) || null
     : null;
 
+  // Render appropriate background
+  const renderBackground = () => {
+    switch (background) {
+      case 'space':
+        return <SpaceBackground />;
+      case 'gradient':
+        return <GradientBackground />;
+      case 'grid':
+        return <GridBackground />;
+      case 'particles':
+        return <ParticlesBackground />;
+      case 'none':
+        return <div className="fixed inset-0 bg-slate-950 -z-10" />;
+      default:
+        return <SpaceBackground />;
+    }
+  };
+
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden">
-      <SpaceBackground />
+      {renderBackground()}
       <Toolbar
         onOpenDrawer={() => setIsDrawerOpen(true)}
         onOpenNodesSidebar={() => setIsNodesSidebarOpen(true)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
       />
       <Canvas className="flex-1" />
       <MindMapDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
@@ -71,6 +102,7 @@ export default function Home() {
         onEditNode={handleEditNode}
       />
       <NodeModal node={editingNode} onClose={() => setEditingNodeId(null)} />
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );
 }
