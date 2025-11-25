@@ -7,6 +7,7 @@ interface SettingsState {
   background: BackgroundType;
   themeColor: ThemeColor;
   defaultEdgeColor: string;
+  defaultNodeColor: string;
   noneBackgroundColor: string;
   customBackgroundImage: string | null;
   gradientColor1: string;
@@ -15,6 +16,7 @@ interface SettingsState {
   setBackground: (background: BackgroundType) => void;
   setThemeColor: (color: ThemeColor) => void;
   setDefaultEdgeColor: (color: string) => void;
+  setDefaultNodeColor: (color: string) => void;
   setNoneBackgroundColor: (color: string) => void;
   setCustomBackgroundImage: (image: string | null) => void;
   setGradientColor1: (color: string) => void;
@@ -37,6 +39,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   background: 'space',
   themeColor: 'purple',
   defaultEdgeColor: '#8b5cf6',
+  defaultNodeColor: '#8b5cf6',
   noneBackgroundColor: '#0f172a',
   customBackgroundImage: null,
   gradientColor1: '#8b5cf6',
@@ -55,6 +58,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   setDefaultEdgeColor: (color) => {
     set({ defaultEdgeColor: color });
+    get().saveSettings();
+  },
+
+  setDefaultNodeColor: (color) => {
+    set({ defaultNodeColor: color });
     get().saveSettings();
   },
 
@@ -81,6 +89,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   loadSettings: () => {
     if (typeof window === 'undefined') return;
 
+    // Migrate old defaultNodeColor from localStorage if it exists
+    const oldDefaultNodeColor = localStorage.getItem('defaultNodeColor');
+
     const saved = localStorage.getItem('mindmap-settings');
     if (saved) {
       try {
@@ -89,14 +100,25 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
           background: settings.background || 'space',
           themeColor: settings.themeColor || 'purple',
           defaultEdgeColor: settings.defaultEdgeColor || '#8b5cf6',
+          defaultNodeColor: settings.defaultNodeColor || oldDefaultNodeColor || '#8b5cf6',
           noneBackgroundColor: settings.noneBackgroundColor || '#0f172a',
           customBackgroundImage: settings.customBackgroundImage || null,
           gradientColor1: settings.gradientColor1 || '#8b5cf6',
           gradientColor2: settings.gradientColor2 || '#ec4899',
         });
+
+        // Clean up old localStorage key
+        if (oldDefaultNodeColor) {
+          localStorage.removeItem('defaultNodeColor');
+        }
       } catch (e) {
         console.error('Failed to load settings:', e);
       }
+    } else if (oldDefaultNodeColor) {
+      // If no settings but old key exists, use it
+      set({ defaultNodeColor: oldDefaultNodeColor });
+      localStorage.removeItem('defaultNodeColor');
+      get().saveSettings();
     }
   },
 
@@ -108,6 +130,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       background: state.background,
       themeColor: state.themeColor,
       defaultEdgeColor: state.defaultEdgeColor,
+      defaultNodeColor: state.defaultNodeColor,
       noneBackgroundColor: state.noneBackgroundColor,
       customBackgroundImage: state.customBackgroundImage,
       gradientColor1: state.gradientColor1,

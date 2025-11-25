@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { MindMapNode } from '@/lib/types';
 import { useMindMapStore } from '@/lib/store';
+import { useSettingsStore } from '@/lib/settingsStore';
 import { Node } from './Node';
 import { EdgeRenderer } from './EdgeRenderer';
 import { NodeModal } from './NodeModal';
@@ -28,6 +29,7 @@ export function Canvas({ className, onNodeEdit }: CanvasProps) {
 
   const { maps, currentMapId, addNode, setSelectedNode, connectionState, updateEdge } =
     useMindMapStore();
+  const { defaultNodeColor } = useSettingsStore();
 
   const currentMap = maps.find((m) => m.id === currentMapId);
 
@@ -62,7 +64,7 @@ export function Canvas({ className, onNodeEdit }: CanvasProps) {
         title: 'New Node',
         shortNote: '',
         details: '',
-        color: '#8b5cf6',
+        color: defaultNodeColor,
         variant: 'default',
         position: { x: x - 70, y: y - 70 } // Center on click position
       });

@@ -14,7 +14,7 @@ interface NodesSidebarProps {
 
 export function NodesSidebar({ isOpen, onClose, onEditNode }: NodesSidebarProps) {
   const { maps, currentMapId, selectedNodeId, setSelectedNode, deleteNode } = useMindMapStore();
-  const { themeColor, defaultEdgeColor, setDefaultEdgeColor } = useSettingsStore();
+  const { themeColor, defaultEdgeColor, defaultNodeColor, setDefaultEdgeColor, setDefaultNodeColor } = useSettingsStore();
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const currentThemeColor = getThemeColor(themeColor);
@@ -30,11 +30,6 @@ export function NodesSidebar({ isOpen, onClose, onEditNode }: NodesSidebarProps)
   };
 
   const rgb = hexToRgb(currentThemeColor);
-
-  // Get default node color from localStorage
-  const defaultNodeColor = typeof window !== 'undefined'
-    ? localStorage.getItem('defaultNodeColor') || '#8b5cf6'
-    : '#8b5cf6';
 
   const currentMap = maps.find((m) => m.id === currentMapId);
 
@@ -52,11 +47,6 @@ export function NodesSidebar({ isOpen, onClose, onEditNode }: NodesSidebarProps)
 
   const handleNodeClick = (nodeId: string) => {
     setSelectedNode(nodeId);
-  };
-
-  // Store default node color in localStorage
-  const handleNodeColorChange = (color: string) => {
-    localStorage.setItem('defaultNodeColor', color);
   };
 
   return (
@@ -115,7 +105,7 @@ export function NodesSidebar({ isOpen, onClose, onEditNode }: NodesSidebarProps)
                   {PRESET_COLORS.map((color) => (
                     <button
                       key={color}
-                      onClick={() => handleNodeColorChange(color)}
+                      onClick={() => setDefaultNodeColor(color)}
                       className={`w-8 h-8 rounded-lg transition-all duration-200 ${
                         defaultNodeColor === color
                           ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110'

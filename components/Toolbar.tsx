@@ -4,8 +4,6 @@ import { useRef } from 'react';
 import { useMindMapStore } from '@/lib/store';
 import { useSettingsStore, getThemeColor } from '@/lib/settingsStore';
 import { importMapFromJSON } from '@/lib/persistence';
-import { PRESET_COLORS } from './ui/ColorPicker';
-import { randInt } from 'three/src/math/MathUtils.js';
 
 interface ToolbarProps {
   onOpenDrawer: () => void;
@@ -26,7 +24,7 @@ export function Toolbar({ onOpenDrawer, onOpenNodesSidebar, onOpenSettings }: To
     cancelConnection,
   } = useMindMapStore();
 
-  const { themeColor } = useSettingsStore();
+  const { themeColor, defaultNodeColor } = useSettingsStore();
   const currentThemeColor = getThemeColor(themeColor);
 
   const currentMap = maps.find((m) => m.id === currentMapId);
@@ -64,13 +62,11 @@ export function Toolbar({ onOpenDrawer, onOpenNodesSidebar, onOpenSettings }: To
     // Add node at center of viewport
     const centerX = window.innerWidth / 2 - 70; // 70 = half of node width
     const centerY = (window.innerHeight - 64) / 2 - 70; // 64 = toolbar height, 70 = half of node height
-    const storedColor = localStorage.getItem("defaultNodeColor");
-    let color = storedColor != null ? storedColor : (PRESET_COLORS.at(randInt(0,PRESET_COLORS.length-1)) || "#f97316");
     addNode({
       title: 'New Node',
       shortNote: '',
       details: '',
-      color: color,
+      color: defaultNodeColor,
       variant: 'default',
       position: { x: centerX, y: centerY }
     });
