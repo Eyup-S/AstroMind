@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMindMapStore } from '@/lib/store';
-import { useSettingsStore } from '@/lib/settingsStore';
+import { useSettingsStore, getThemeColor } from '@/lib/settingsStore';
 import { PRESET_COLORS } from './ui/ColorPicker';
 import { useState } from 'react';
 
@@ -14,8 +14,22 @@ interface NodesSidebarProps {
 
 export function NodesSidebar({ isOpen, onClose, onEditNode }: NodesSidebarProps) {
   const { maps, currentMapId, selectedNodeId, setSelectedNode, deleteNode } = useMindMapStore();
-  const { defaultEdgeColor, setDefaultEdgeColor } = useSettingsStore();
+  const { themeColor, defaultEdgeColor, setDefaultEdgeColor } = useSettingsStore();
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  const currentThemeColor = getThemeColor(themeColor);
+
+  // Convert hex to RGB for dynamic styling
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : { r: 139, g: 92, b: 246 };
+  };
+
+  const rgb = hexToRgb(currentThemeColor);
 
   // Get default node color from localStorage
   const defaultNodeColor = typeof window !== 'undefined'
@@ -64,14 +78,21 @@ export function NodesSidebar({ isOpen, onClose, onEditNode }: NodesSidebarProps)
             animate={{ x: 0 }}
             exit={{ x: 320 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 bottom-0 w-80 bg-slate-900/95 backdrop-blur-md border-l border-purple-500/30 shadow-2xl z-50 flex flex-col"
+            className="fixed right-0 top-0 bottom-0 w-80 bg-slate-900/95 backdrop-blur-md border-l shadow-2xl z-50 flex flex-col"
+            style={{ borderLeftColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}
           >
             {/* Header */}
-            <div className="p-4 border-b border-purple-500/30 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-purple-200">Nodes & Settings</h2>
+            <div
+              className="p-4 border-b flex items-center justify-between"
+              style={{ borderBottomColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}
+            >
+              <h2 className="text-lg font-semibold" style={{ color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.9)` }}>
+                Nodes & Settings
+              </h2>
               <button
                 onClick={onClose}
-                className="text-purple-300 hover:text-white transition-colors"
+                className="transition-colors hover:text-white"
+                style={{ color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.7)` }}
                 aria-label="Close sidebar"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,10 +102,15 @@ export function NodesSidebar({ isOpen, onClose, onEditNode }: NodesSidebarProps)
             </div>
 
             {/* Settings Section */}
-            <div className="p-4 border-b border-purple-500/20 space-y-4">
+            <div
+              className="p-4 border-b space-y-4"
+              style={{ borderBottomColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)` }}
+            >
               {/* Default Node Color */}
               <div>
-                <h3 className="text-sm font-medium text-purple-300 mb-3">Default Node Color</h3>
+                <h3 className="text-sm font-medium mb-3" style={{ color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.7)` }}>
+                  Default Node Color
+                </h3>
                 <div className="grid grid-cols-6 gap-2">
                   {PRESET_COLORS.map((color) => (
                     <button
@@ -104,7 +130,9 @@ export function NodesSidebar({ isOpen, onClose, onEditNode }: NodesSidebarProps)
 
               {/* Default Edge Color */}
               <div>
-                <h3 className="text-sm font-medium text-purple-300 mb-3">Default Connection Color</h3>
+                <h3 className="text-sm font-medium mb-3" style={{ color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.7)` }}>
+                  Default Connection Color
+                </h3>
                 <div className="grid grid-cols-6 gap-2">
                   {PRESET_COLORS.map((color) => (
                     <button
@@ -125,21 +153,36 @@ export function NodesSidebar({ isOpen, onClose, onEditNode }: NodesSidebarProps)
 
             {/* Nodes List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              <h3 className="text-sm font-medium text-purple-300 mb-3 sticky top-0 bg-slate-900/95 py-2">
+              <h3 className="text-sm font-medium mb-3 sticky top-0 bg-slate-900/95 py-2" style={{ color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.7)` }}>
                 Nodes ({currentMap.nodes.length})
               </h3>
 
               {currentMap.nodes.length === 0 ? (
-                <p className="text-purple-400/60 text-sm text-center py-8">No nodes yet</p>
+                <p className="text-sm text-center py-8" style={{ color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.5)` }}>
+                  No nodes yet
+                </p>
               ) : (
                 currentMap.nodes.map((node) => (
                   <div
                     key={node.id}
-                    className={`group p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
-                      selectedNodeId === node.id
-                        ? 'bg-purple-500/20 border-purple-400 shadow-lg'
-                        : 'bg-slate-800/50 border-purple-500/20 hover:bg-slate-800/80 hover:border-purple-400/40'
-                    }`}
+                    className="group p-3 rounded-lg border transition-all duration-200 cursor-pointer"
+                    style={{
+                      backgroundColor: selectedNodeId === node.id ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)` : 'rgba(30, 41, 59, 0.5)',
+                      borderColor: selectedNodeId === node.id ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.6)` : `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`,
+                      boxShadow: selectedNodeId === node.id ? `0 10px 15px -3px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)` : 'none'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedNodeId !== node.id) {
+                        e.currentTarget.style.backgroundColor = 'rgba(30, 41, 59, 0.8)';
+                        e.currentTarget.style.borderColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.4)`;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedNodeId !== node.id) {
+                        e.currentTarget.style.backgroundColor = 'rgba(30, 41, 59, 0.5)';
+                        e.currentTarget.style.borderColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`;
+                      }
+                    }}
                     onClick={() => handleNodeClick(node.id)}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -154,7 +197,7 @@ export function NodesSidebar({ isOpen, onClose, onEditNode }: NodesSidebarProps)
                           </h4>
                         </div>
                         {node.shortNote && (
-                          <p className="text-xs text-purple-300/70 line-clamp-2">
+                          <p className="text-xs line-clamp-2" style={{ color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.6)` }}>
                             {node.shortNote}
                           </p>
                         )}
@@ -167,7 +210,14 @@ export function NodesSidebar({ isOpen, onClose, onEditNode }: NodesSidebarProps)
                             e.stopPropagation();
                             onEditNode(node.id);
                           }}
-                          className="p-1.5 rounded hover:bg-purple-500/30 text-purple-300 hover:text-white transition-colors"
+                          className="p-1.5 rounded transition-colors hover:text-white"
+                          style={{ color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.7)` }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`;
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
                           aria-label="Edit node"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -182,8 +232,9 @@ export function NodesSidebar({ isOpen, onClose, onEditNode }: NodesSidebarProps)
                           className={`p-1.5 rounded transition-colors ${
                             deleteConfirm === node.id
                               ? 'bg-red-500/30 text-red-300'
-                              : 'hover:bg-red-500/30 text-purple-300 hover:text-red-300'
+                              : 'hover:bg-red-500/30 hover:text-red-300'
                           }`}
+                          style={{ color: deleteConfirm === node.id ? undefined : `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.7)` }}
                           aria-label={deleteConfirm === node.id ? 'Confirm delete' : 'Delete node'}
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

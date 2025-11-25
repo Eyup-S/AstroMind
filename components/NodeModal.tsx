@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { MindMapNode } from '@/lib/types';
 import { useMindMapStore } from '@/lib/store';
+import { useSettingsStore, getThemeColor } from '@/lib/settingsStore';
 import { Modal } from './ui/Modal';
 import { ColorPicker } from './ui/ColorPicker';
 import { VariantSelector } from './ui/VariantSelector';
@@ -14,6 +15,20 @@ interface NodeModalProps {
 
 export function NodeModal({ node, onClose }: NodeModalProps) {
   const { updateNode, deleteNode } = useMindMapStore();
+  const { themeColor } = useSettingsStore();
+  const currentThemeColor = getThemeColor(themeColor);
+
+  // Convert hex to RGB for dynamic styling
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : { r: 139, g: 92, b: 246 };
+  };
+
+  const rgb = hexToRgb(currentThemeColor);
 
   const [title, setTitle] = useState('');
   const [shortNote, setShortNote] = useState('');
@@ -60,14 +75,26 @@ export function NodeModal({ node, onClose }: NodeModalProps) {
       <div className="p-6 space-y-6">
         {/* Title Input */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-purple-300">
+          <label className="block text-sm font-medium" style={{ color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.7)` }}>
             Title
           </label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-4 py-3 bg-slate-800/50 border border-purple-500/30 rounded-lg text-white placeholder-purple-300/50 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+            className="w-full px-4 py-3 bg-slate-800/50 border rounded-lg text-white focus:outline-none focus:ring-2 transition-all"
+            style={{
+              borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`,
+              '::placeholder': { color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.5)` }
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.6)`;
+              e.currentTarget.style.boxShadow = `0 0 0 3px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`;
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`;
+              e.currentTarget.style.boxShadow = 'none';
+            }}
             placeholder="Node title..."
             autoFocus
           />
@@ -75,28 +102,50 @@ export function NodeModal({ node, onClose }: NodeModalProps) {
 
         {/* Short Note Input */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-purple-300">
+          <label className="block text-sm font-medium" style={{ color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.7)` }}>
             Short Note
           </label>
           <input
             type="text"
             value={shortNote}
             onChange={(e) => setShortNote(e.target.value)}
-            className="w-full px-4 py-3 bg-slate-800/50 border border-purple-500/30 rounded-lg text-white placeholder-purple-300/50 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+            className="w-full px-4 py-3 bg-slate-800/50 border rounded-lg text-white focus:outline-none focus:ring-2 transition-all"
+            style={{
+              borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`,
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.6)`;
+              e.currentTarget.style.boxShadow = `0 0 0 3px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`;
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`;
+              e.currentTarget.style.boxShadow = 'none';
+            }}
             placeholder="Brief description..."
           />
         </div>
 
         {/* Details Textarea */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-purple-300">
+          <label className="block text-sm font-medium" style={{ color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.7)` }}>
             Details
           </label>
           <textarea
             value={details}
             onChange={(e) => setDetails(e.target.value)}
             rows={4}
-            className="w-full px-4 py-3 bg-slate-800/50 border border-purple-500/30 rounded-lg text-white placeholder-purple-300/50 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all resize-none"
+            className="w-full px-4 py-3 bg-slate-800/50 border rounded-lg text-white focus:outline-none focus:ring-2 transition-all resize-none"
+            style={{
+              borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`,
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.6)`;
+              e.currentTarget.style.boxShadow = `0 0 0 3px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`;
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`;
+              e.currentTarget.style.boxShadow = 'none';
+            }}
             placeholder="Additional details..."
           />
         </div>
@@ -111,7 +160,18 @@ export function NodeModal({ node, onClose }: NodeModalProps) {
         <div className="flex gap-3 pt-4">
           <button
             onClick={handleSave}
-            className="flex-1 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors shadow-lg shadow-purple-500/30"
+            className="flex-1 px-6 py-3 text-white font-medium rounded-lg transition-colors shadow-lg"
+            style={{
+              backgroundColor: currentThemeColor,
+              boxShadow: `0 10px 15px -3px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`
+            }}
+            onMouseEnter={(e) => {
+              const darkenedRgb = { r: Math.max(0, rgb.r - 20), g: Math.max(0, rgb.g - 20), b: Math.max(0, rgb.b - 20) };
+              e.currentTarget.style.backgroundColor = `rgb(${darkenedRgb.r}, ${darkenedRgb.g}, ${darkenedRgb.b})`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = currentThemeColor;
+            }}
           >
             Save Changes
           </button>
@@ -123,7 +183,11 @@ export function NodeModal({ node, onClose }: NodeModalProps) {
           </button>
           <button
             onClick={onClose}
-            className="px-6 py-3 bg-slate-800/50 hover:bg-slate-700/50 text-purple-200 font-medium rounded-lg transition-colors border border-purple-500/20"
+            className="px-6 py-3 bg-slate-800/50 hover:bg-slate-700/50 font-medium rounded-lg transition-colors border"
+            style={{
+              borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`,
+              color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.9)`
+            }}
           >
             Cancel
           </button>

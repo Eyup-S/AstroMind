@@ -17,7 +17,7 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 export default function Home() {
   const { maps, createNewMap } = useMindMapStore();
-  const { background, loadSettings } = useSettingsStore();
+  const { background, noneBackgroundColor, customBackgroundImage, loadSettings } = useSettingsStore();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isNodesSidebarOpen, setIsNodesSidebarOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -70,6 +70,28 @@ export default function Home() {
 
   // Render appropriate background
   const renderBackground = () => {
+    // If custom image is set, show it with the selected background overlay
+    if (customBackgroundImage) {
+      return (
+        <>
+          <div
+            className="fixed inset-0 -z-20 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${customBackgroundImage})` }}
+          />
+          <div className="fixed inset-0 -z-10 bg-black/50" />
+          {background !== 'none' && (
+            <div className="fixed inset-0 -z-10 opacity-30">
+              {background === 'space' && <SpaceBackground />}
+              {background === 'gradient' && <GradientBackground />}
+              {background === 'grid' && <GridBackground />}
+              {background === 'particles' && <ParticlesBackground />}
+            </div>
+          )}
+        </>
+      );
+    }
+
+    // Regular backgrounds without custom image
     switch (background) {
       case 'space':
         return <SpaceBackground />;
@@ -80,7 +102,12 @@ export default function Home() {
       case 'particles':
         return <ParticlesBackground />;
       case 'none':
-        return <div className="fixed inset-0 bg-slate-950 -z-10" />;
+        return (
+          <div
+            className="fixed inset-0 -z-10"
+            style={{ backgroundColor: noneBackgroundColor }}
+          />
+        );
       default:
         return <SpaceBackground />;
     }

@@ -1,9 +1,12 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useSettingsStore, getThemeColor } from '@/lib/settingsStore';
 
 export function ParticlesBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { themeColor } = useSettingsStore();
+  const color = getThemeColor(themeColor);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -14,6 +17,18 @@ export function ParticlesBackground() {
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+
+    // Convert hex to RGB
+    const hexToRgb = (hex: string) => {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : { r: 139, g: 92, b: 246 };
+    };
+
+    const rgb = hexToRgb(color);
 
     const particles: Array<{
       x: number;
@@ -51,7 +66,7 @@ export function ParticlesBackground() {
         if (particle.y > canvas.height) particle.y = 0;
 
         // Draw particle
-        ctx.fillStyle = `rgba(139, 92, 246, ${0.3 + Math.random() * 0.3})`;
+        ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${0.3 + Math.random() * 0.3})`;
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
         ctx.fill();
@@ -65,7 +80,7 @@ export function ParticlesBackground() {
           const distance = Math.sqrt(dx * dx + dy * dy);
 
           if (distance < 100) {
-            ctx.strokeStyle = `rgba(139, 92, 246, ${0.1 * (1 - distance / 100)})`;
+            ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${0.1 * (1 - distance / 100)})`;
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(p1.x, p1.y);
@@ -91,7 +106,7 @@ export function ParticlesBackground() {
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', handleResize);
     };
-  }, []);
+  }, [color]);
 
   return (
     <canvas
