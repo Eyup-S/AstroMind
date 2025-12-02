@@ -82,10 +82,9 @@ export function NodeModal({ node, onClose }: NodeModalProps) {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-4 py-3 bg-slate-800/50 border rounded-lg text-white focus:outline-none focus:ring-2 transition-all"
+            className="w-full px-4 py-3 bg-slate-800/50 border rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all"
             style={{
-              borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`,
-              '::placeholder': { color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.5)` }
+              borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`
             }}
             onFocus={(e) => {
               e.currentTarget.style.borderColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.6)`;
@@ -109,7 +108,7 @@ export function NodeModal({ node, onClose }: NodeModalProps) {
             type="text"
             value={shortNote}
             onChange={(e) => setShortNote(e.target.value)}
-            className="w-full px-4 py-3 bg-slate-800/50 border rounded-lg text-white focus:outline-none focus:ring-2 transition-all"
+            className="w-full px-4 py-3 bg-slate-800/50 border rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all"
             style={{
               borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`,
             }}
@@ -134,7 +133,7 @@ export function NodeModal({ node, onClose }: NodeModalProps) {
             value={details}
             onChange={(e) => setDetails(e.target.value)}
             rows={4}
-            className="w-full px-4 py-3 bg-slate-800/50 border rounded-lg text-white focus:outline-none focus:ring-2 transition-all resize-none"
+            className="w-full px-4 py-3 bg-slate-800/50 border rounded-lg text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all resize-none"
             style={{
               borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`,
             }}
