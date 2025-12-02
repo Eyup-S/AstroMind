@@ -99,10 +99,10 @@ export function EdgeRenderer({ edges, nodes, camera, onEdgeClick }: EdgeRenderer
         {edges.map((edge) => {
           const fromCenter = getNodeCenter(edge.from);
           const toCenter = getNodeCenter(edge.to);
-          console.log("from to", fromCenter, toCenter)
+          //console.log("from to", fromCenter, toCenter)
 
           const isSelected = selectedEdgeId === edge.id;
-          const path = createStraightPath(fromCenter.x, fromCenter.y, toCenter.x, toCenter.y);
+          const path = createCurvedPath(fromCenter.x, fromCenter.y, toCenter.x, toCenter.y);
           const edgeColor = edge.color || '#8b5cf6';
 
           // Calculate midpoint for color picker placement

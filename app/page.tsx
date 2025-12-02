@@ -11,6 +11,8 @@ import { MindMapDrawer } from '@/components/MindMapDrawer';
 import { NodesSidebar } from '@/components/NodesSidebar';
 import { NodeModal } from '@/components/NodeModal';
 import { SettingsModal } from '@/components/SettingsModal';
+import { LandingPage } from '@/components/LandingPage';
+import { HowToUseModal } from '@/components/HowToUseModal';
 import { useMindMapStore } from '@/lib/store';
 import { useSettingsStore } from '@/lib/settingsStore';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
@@ -21,10 +23,20 @@ export default function Home() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isNodesSidebarOpen, setIsNodesSidebarOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isHowToUseOpen, setIsHowToUseOpen] = useState(false);
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
+  const [showLandingPage, setShowLandingPage] = useState(true);
 
   // Enable keyboard shortcuts
   useKeyboardShortcuts();
+
+  // Check if user has visited before
+  useEffect(() => {
+    const hasVisited = localStorage.getItem('astro-mind-visited');
+    if (hasVisited === 'true') {
+      setShowLandingPage(false);
+    }
+  }, []);
 
   // Load settings on mount
   useEffect(() => {
@@ -60,6 +72,11 @@ export default function Home() {
     if (node) {
       setEditingNodeId(nodeId);
     }
+  };
+
+  const handleStartApp = () => {
+    localStorage.setItem('astro-mind-visited', 'true');
+    setShowLandingPage(false);
   };
 
   // Get the editing node
@@ -113,6 +130,11 @@ export default function Home() {
     }
   };
 
+  // Show landing page for first-time visitors
+  if (showLandingPage) {
+    return <LandingPage onStart={handleStartApp} />;
+  }
+
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden">
       {renderBackground()}
@@ -120,6 +142,7 @@ export default function Home() {
         onOpenDrawer={() => setIsDrawerOpen(true)}
         onOpenNodesSidebar={() => setIsNodesSidebarOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenHowToUse={() => setIsHowToUseOpen(true)}
       />
       <Canvas className="flex-1" />
       <MindMapDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
@@ -130,6 +153,7 @@ export default function Home() {
       />
       <NodeModal node={editingNode} onClose={() => setEditingNodeId(null)} />
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <HowToUseModal isOpen={isHowToUseOpen} onClose={() => setIsHowToUseOpen(false)} />
     </div>
   );
 }
