@@ -10,9 +10,18 @@ interface ToolbarProps {
   onOpenNodesSidebar: () => void;
   onOpenSettings: () => void;
   onOpenHowToUse: () => void;
+  onOpenPasteJson: () => void;
+  onOpenGeneratePrompt: () => void;
 }
 
-export function Toolbar({ onOpenDrawer, onOpenNodesSidebar, onOpenSettings, onOpenHowToUse }: ToolbarProps) {
+export function Toolbar({
+  onOpenDrawer,
+  onOpenNodesSidebar,
+  onOpenSettings,
+  onOpenHowToUse,
+  onOpenPasteJson,
+  onOpenGeneratePrompt
+}: ToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -193,6 +202,26 @@ export function Toolbar({ onOpenDrawer, onOpenNodesSidebar, onOpenSettings, onOp
           style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}
         />
 
+        {/* Generate Prompt button */}
+        <button
+          onClick={onOpenGeneratePrompt}
+          className="px-4 py-2 bg-slate-800/50 rounded-lg transition-colors border text-sm font-medium"
+          style={{
+            borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`,
+            color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.9)`
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(30, 41, 59, 0.5)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(30, 41, 59, 0.3)';
+          }}
+          title="Generate AI Prompt"
+        >
+          Generate Prompt
+        </button>
+
+        {/* Import JSON button */}
         <button
           onClick={handleImportClick}
           className="px-4 py-2 bg-slate-800/50 rounded-lg transition-colors border text-sm font-medium"
@@ -206,8 +235,28 @@ export function Toolbar({ onOpenDrawer, onOpenNodesSidebar, onOpenSettings, onOp
           onMouseLeave={(e) => {
             e.currentTarget.style.backgroundColor = 'rgba(30, 41, 59, 0.3)';
           }}
+          title="Import mind map from JSON file"
         >
           Import JSON
+        </button>
+
+        {/* Paste JSON button */}
+        <button
+          onClick={onOpenPasteJson}
+          className="px-4 py-2 bg-slate-800/50 rounded-lg transition-colors border text-sm font-medium"
+          style={{
+            borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`,
+            color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.9)`
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(30, 41, 59, 0.5)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(30, 41, 59, 0.3)';
+          }}
+          title="Paste JSON directly"
+        >
+          Paste JSON
         </button>
 
         <button

@@ -13,6 +13,8 @@ import { NodeModal } from '@/components/NodeModal';
 import { SettingsModal } from '@/components/SettingsModal';
 import { LandingPage } from '@/components/LandingPage';
 import { HowToUseModal } from '@/components/HowToUseModal';
+import { PasteJsonModal } from '@/components/PasteJsonModal';
+import { GeneratePromptModal } from '@/components/GeneratePromptModal';
 import { useMindMapStore } from '@/lib/store';
 import { useSettingsStore } from '@/lib/settingsStore';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
@@ -24,6 +26,8 @@ export default function Home() {
   const [isNodesSidebarOpen, setIsNodesSidebarOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHowToUseOpen, setIsHowToUseOpen] = useState(false);
+  const [isPasteJsonOpen, setIsPasteJsonOpen] = useState(false);
+  const [isGeneratePromptOpen, setIsGeneratePromptOpen] = useState(false);
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const [showLandingPage, setShowLandingPage] = useState(true);
 
@@ -143,6 +147,8 @@ export default function Home() {
         onOpenNodesSidebar={() => setIsNodesSidebarOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenHowToUse={() => setIsHowToUseOpen(true)}
+        onOpenPasteJson={() => setIsPasteJsonOpen(true)}
+        onOpenGeneratePrompt={() => setIsGeneratePromptOpen(true)}
       />
       <Canvas className="flex-1" />
       <MindMapDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
@@ -154,6 +160,8 @@ export default function Home() {
       <NodeModal node={editingNode} onClose={() => setEditingNodeId(null)} />
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <HowToUseModal isOpen={isHowToUseOpen} onClose={() => setIsHowToUseOpen(false)} />
+      <PasteJsonModal isOpen={isPasteJsonOpen} onClose={() => setIsPasteJsonOpen(false)} />
+      <GeneratePromptModal isOpen={isGeneratePromptOpen} onClose={() => setIsGeneratePromptOpen(false)} />
     </div>
   );
 }
