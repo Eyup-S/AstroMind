@@ -84,10 +84,18 @@ export function importMapFromJSON(
   try {
     const parsed = JSON.parse(jsonString);
 
+    // Add createdAt and updatedAt if missing (for AI-generated or external JSON)
+    if (typeof parsed.createdAt !== 'number') {
+      parsed.createdAt = Date.now();
+    }
+    if (typeof parsed.updatedAt !== 'number') {
+      parsed.updatedAt = Date.now();
+    }
+
     if (validateMindMap(parsed)) {
       return { success: true, map: parsed };
     } else {
-      return { success: false, error: 'Invalid mind map structure' };
+      return { success: false, error: 'Invalid mind map structure. Required fields: id, name, nodes (array), edges (array)' };
     }
   } catch (error) {
     return {
