@@ -25,6 +25,7 @@ export function Node({ node, onEdit, camera, dragConstraints }: NodeProps) {
     updateNode,
     deleteNode,
     connectionState,
+    startConnectionMode,
     setConnectionSource,
     completeConnection
   } = useMindMapStore();
@@ -101,6 +102,12 @@ export function Node({ node, onEdit, camera, dragConstraints }: NodeProps) {
     } else {
       setDeleteConfirm(true);
     }
+  };
+
+  const handleStartConnection = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    startConnectionMode();
+    setConnectionSource(node.id);
   };
 
   const getVariantClasses = () => {
@@ -231,6 +238,29 @@ export function Node({ node, onEdit, camera, dragConstraints }: NodeProps) {
           >
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
+
+          {/* Connect button */}
+          <button
+            onClick={handleStartConnection}
+            className="p-2 rounded-lg backdrop-blur-md shadow-lg transition-all duration-200"
+            style={{
+              backgroundColor: 'rgba(59, 130, 246, 0.9)',
+              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgb(37, 99, 235)';
+              e.currentTarget.style.transform = 'scale(1.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.9)';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+            title="Connect to another node"
+          >
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
             </svg>
           </button>
 
