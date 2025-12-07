@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { experimental_useObject as useObject } from '@ai-sdk/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSettingsStore, getThemeColor } from '@/lib/settingsStore';
@@ -20,6 +20,10 @@ export function GeneratePromptModal({ isOpen, onClose }: GeneratePromptModalProp
   const [userInput, setUserInput] = useState('');
   const [viewState, setViewState] = useState<ViewState>('input');
   const [error, setError] = useState('');
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfData, setPdfData] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { themeColor } = useSettingsStore();
   const currentThemeColor = getThemeColor(themeColor);
@@ -49,8 +53,86 @@ export function GeneratePromptModal({ isOpen, onClose }: GeneratePromptModalProp
 
   const rgb = hexToRgb(currentThemeColor);
 
+  // Convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove the data URL prefix to get just the base64 data
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Handle PDF file selection
+  const handleFileSelect = useCallback(async (file: File) => {
+    if (file.type !== 'application/pdf') {
+      setError('Please select a PDF file');
+      return;
+    }
+
+    if (file.size > 20 * 1024 * 1024) { // 20MB limit
+      setError('PDF file is too large. Maximum size is 20MB.');
+      return;
+    }
+
+    try {
+      const base64 = await fileToBase64(file);
+      setPdfFile(file);
+      setPdfData(base64);
+      setError('');
+    } catch {
+      setError('Failed to read PDF file');
+    }
+  }, []);
+
+  // Handle file input change
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  };
+
+  // Handle drag events
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  }, [handleFileSelect]);
+
+  // Remove PDF
+  const handleRemovePdf = () => {
+    setPdfFile(null);
+    setPdfData(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleGenerate = () => {
-    if (!userInput.trim()) return;
+    if (!userInput.trim() && !pdfData) return;
     if (!apiKey) {
       setViewState('settings');
       return;
@@ -58,7 +140,13 @@ export function GeneratePromptModal({ isOpen, onClose }: GeneratePromptModalProp
 
     setError('');
     setViewState('generating');
-    submit({ prompt: userInput, apiKey, model: selectedModel });
+    submit({ 
+      prompt: userInput || 'Create a comprehensive mind map from this document.', 
+      apiKey, 
+      model: selectedModel,
+      pdfData: pdfData || undefined,
+      pdfName: pdfFile?.name || undefined,
+    });
   };
 
   const handleImport = () => {
@@ -115,7 +203,12 @@ export function GeneratePromptModal({ isOpen, onClose }: GeneratePromptModalProp
     if (isLoading) stop();
     setUserInput('');
     setError('');
+    setPdfFile(null);
+    setPdfData(null);
     setViewState('input');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     onClose();
   };
 
@@ -127,28 +220,106 @@ export function GeneratePromptModal({ isOpen, onClose }: GeneratePromptModalProp
 
   const renderInputView = () => (
     <>
-      <div className="p-8">
+      <div 
+        className="p-8"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/pdf"
+          onChange={handleFileInputChange}
+          className="hidden"
+        />
+
         <div className="mb-6">
           <label className="block text-sm font-medium text-slate-400 mb-2">
-            Describe your idea
+            Describe your idea {pdfFile && <span className="text-slate-500">or let AI analyze your PDF</span>}
           </label>
-          <textarea
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            placeholder="E.g., Create a mind map about project planning with phases like research, design, development..."
-            className="w-full h-48 px-5 py-4 bg-slate-950/50 border border-slate-800 rounded-2xl text-slate-200 resize-none focus:outline-none transition-all placeholder:text-slate-600"
+          <div 
+            className="relative rounded-2xl transition-all"
             style={{ 
-              boxShadow: `inset 0 2px 4px rgba(0,0,0,0.2)`
+              boxShadow: isDragging ? `0 0 0 2px ${currentThemeColor}` : undefined,
             }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.5)`;
-              e.currentTarget.style.boxShadow = `0 0 0 2px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1), inset 0 2px 4px rgba(0,0,0,0.2)`;
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = '';
-              e.currentTarget.style.boxShadow = `inset 0 2px 4px rgba(0,0,0,0.2)`;
-            }}
-          />
+          >
+            <textarea
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              placeholder={pdfFile 
+                ? "Optional: Add specific instructions for the mind map (e.g., 'Focus on chapter 3' or 'Highlight key concepts')..."
+                : "E.g., Create a mind map about project planning with phases like research, design, development..."
+              }
+              className="w-full h-40 px-5 py-4 bg-slate-950/50 border border-slate-800 rounded-2xl text-slate-200 resize-none focus:outline-none transition-all placeholder:text-slate-600"
+              style={{ 
+                boxShadow: `inset 0 2px 4px rgba(0,0,0,0.2)`,
+                borderColor: isDragging ? currentThemeColor : undefined,
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.5)`;
+                e.currentTarget.style.boxShadow = `0 0 0 2px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1), inset 0 2px 4px rgba(0,0,0,0.2)`;
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '';
+                e.currentTarget.style.boxShadow = `inset 0 2px 4px rgba(0,0,0,0.2)`;
+              }}
+            />
+            
+            {/* Drag overlay */}
+            {isDragging && (
+              <div 
+                className="absolute inset-0 rounded-2xl flex items-center justify-center bg-slate-900/90 border-2 border-dashed"
+                style={{ borderColor: currentThemeColor }}
+              >
+                <div className="text-center">
+                  <svg className="w-10 h-10 mx-auto mb-2" fill="none" stroke={currentThemeColor} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  <p className="text-sm font-medium" style={{ color: currentThemeColor }}>Drop PDF here</p>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* PDF attachment area */}
+          <div className="mt-3 flex items-center gap-3">
+            {pdfFile ? (
+              <div 
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
+                style={{ 
+                  backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)`,
+                  border: `1px solid rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`,
+                }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke={currentThemeColor} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span className="text-slate-300 max-w-[200px] truncate">{pdfFile.name}</span>
+                <span className="text-slate-500 text-xs">({(pdfFile.size / 1024 / 1024).toFixed(1)} MB)</span>
+                <button
+                  onClick={handleRemovePdf}
+                  className="p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-white transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all text-slate-400 hover:text-white hover:bg-slate-800/50"
+                title="Attach a PDF document"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+                <span>Attach PDF</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Model selector */}
@@ -223,7 +394,7 @@ export function GeneratePromptModal({ isOpen, onClose }: GeneratePromptModalProp
         </button>
         <button
           onClick={handleGenerate}
-          disabled={!userInput.trim()}
+          disabled={!userInput.trim() && !pdfData}
           className="px-6 py-2.5 text-white text-sm font-medium rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg hover:shadow-xl active:scale-95"
           style={{ 
             backgroundColor: currentThemeColor,
@@ -233,7 +404,7 @@ export function GeneratePromptModal({ isOpen, onClose }: GeneratePromptModalProp
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
-          Generate
+          {pdfData ? 'Generate from PDF' : 'Generate'}
         </button>
       </div>
     </>

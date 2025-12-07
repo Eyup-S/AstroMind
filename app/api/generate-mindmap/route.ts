@@ -6,7 +6,7 @@ import { NextRequest } from 'next/server';
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
-  const { prompt, apiKey, model } = await req.json();
+  const { prompt, apiKey, model, pdfData, pdfName } = await req.json();
 
   if (!prompt || !apiKey || !model) {
     return new Response(JSON.stringify({ error: 'Missing required fields' }), {
@@ -29,13 +29,44 @@ Generate a structured mind map based on the user's request. Follow these guideli
 - Position nodes in a readable layout (x: 100-1000, y: 100-600), spreading them out to avoid overlap
 - Connect related nodes with edges using from/to node IDs
 - Generate unique IDs for all nodes and edges (use descriptive slugs like "node-main-topic", "edge-1-2")
-- Create a hierarchical or network structure based on the topic`;
+- Create a hierarchical or network structure based on the topic
+${pdfData ? '- The user has attached a PDF document. Analyze its content and create a mind map that captures the key concepts, structure, and relationships from the document.' : ''}`;
+
+  // Build the messages array with optional PDF file
+  // OpenRouter expects file_data as a data URL: data:application/pdf;base64,{base64_data}
+  const userContent = pdfData
+    ? [
+        {
+          type: 'file' as const,
+          data: `data:application/pdf;base64,${pdfData}`,
+          mediaType: 'application/pdf' as const,
+        },
+        {
+          type: 'text' as const,
+          text: pdfName 
+            ? `Create a mind map from the attached PDF "${pdfName}". ${prompt || 'Focus on the main topics and their relationships.'}`
+            : `Create a mind map from the attached PDF. ${prompt || 'Focus on the main topics and their relationships.'}`,
+        },
+      ]
+    : [
+        {
+          type: 'text' as const,
+          text: prompt as string,
+        },
+      ];
+
+  const messages = [
+    {
+      role: 'user' as const,
+      content: userContent,
+    },
+  ];
 
   const result = streamObject({
     model: openrouter.chat(model),
     schema: mindMapSchema,
     system: systemPrompt,
-    prompt,
+    messages,
   });
 
   return result.toTextStreamResponse();
