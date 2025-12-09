@@ -102,6 +102,65 @@ export function Canvas({ className, onNodeEdit }: CanvasProps) {
     setIsPanning(false);
   };
 
+  // Touch handlers for mobile
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number; distance: number } | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      // Single touch - pan
+      setIsPanning(true);
+      setPanStart({ x: e.touches[0].clientX - pan.x, y: e.touches[0].clientY - pan.y });
+      setTouchStart({
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        distance: 0
+      });
+    } else if (e.touches.length === 2) {
+      // Two finger touch - zoom
+      const distance = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      setTouchStart({
+        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+        y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+        distance
+      });
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault();
+
+    if (e.touches.length === 1 && isPanning) {
+      // Single touch pan
+      setPan({
+        x: e.touches[0].clientX - panStart.x,
+        y: e.touches[0].clientY - panStart.y,
+      });
+    } else if (e.touches.length === 2 && touchStart) {
+      // Two finger zoom
+      const distance = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+
+      const delta = (distance - touchStart.distance) * 0.01;
+      setZoom((prev) => Math.min(Math.max(prev + delta, 0.3), 2));
+
+      setTouchStart({
+        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+        y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+        distance
+      });
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsPanning(false);
+    setTouchStart(null);
+  };
+
   if (!currentMap) {
     return (
       <div className={className}>
@@ -119,13 +178,16 @@ export function Canvas({ className, onNodeEdit }: CanvasProps) {
     <>
       <div
         ref={canvasRef}
-        className={`${className} relative overflow-hidden bg-transparent`}
+        className={`${className} relative overflow-hidden bg-transparent touch-none`}
         onDoubleClick={handleDoubleClick}
         onClick={handleCanvasClick}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         style={{
           cursor: isPanning ? 'grabbing' : connectionState.mode !== 'idle' ? 'crosshair' : 'grab'
         }}
@@ -178,8 +240,11 @@ export function Canvas({ className, onNodeEdit }: CanvasProps) {
           <div className="bg-slate-900/80 backdrop-blur-sm border border-purple-500/30 rounded-lg px-4 py-2 text-purple-200 text-sm font-mono">
             Zoom: {Math.round(zoom * 100)}%
           </div>
-          <div className="bg-slate-900/80 backdrop-blur-sm border border-purple-500/30 rounded-lg px-3 py-2 text-purple-300/70 text-xs">
+          <div className="bg-slate-900/80 backdrop-blur-sm border border-purple-500/30 rounded-lg px-3 py-2 text-purple-300/70 text-xs hidden md:block">
             Shift+Drag or Middle Click to Pan
+          </div>
+          <div className="bg-slate-900/80 backdrop-blur-sm border border-purple-500/30 rounded-lg px-3 py-2 text-purple-300/70 text-xs md:hidden">
+            Drag to Pan • Pinch to Zoom
           </div>
         </div>
       </div>

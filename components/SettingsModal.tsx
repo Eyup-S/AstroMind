@@ -94,15 +94,15 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-slate-900/95 backdrop-blur-md border rounded-2xl shadow-2xl z-[101] max-h-[80vh] overflow-y-auto"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] sm:w-full max-w-2xl bg-slate-900/95 backdrop-blur-md border rounded-2xl shadow-2xl z-[101] max-h-[90vh] sm:max-h-[80vh] overflow-y-auto"
             style={{ borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}
           >
             {/* Header */}
             <div
-              className="sticky top-0 bg-slate-900/95 backdrop-blur-md border-b p-6 flex items-center justify-between"
+              className="sticky top-0 bg-slate-900/95 backdrop-blur-md border-b p-4 sm:p-6 flex items-center justify-between"
               style={{ borderBottomColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}
             >
-              <h2 className="text-2xl font-bold" style={{ color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.9)` }}>
+              <h2 className="text-xl sm:text-2xl font-bold" style={{ color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.9)` }}>
                 Settings
               </h2>
               <button
@@ -124,20 +124,20 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             </div>
 
             {/* Content */}
-            <div className="p-6 space-y-8">
+            <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
               {/* Theme Color Section */}
               <div>
-                <h3 className="text-lg font-semibold mb-4" style={{ color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.9)` }}>
+                <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4" style={{ color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.9)` }}>
                   Theme Color
                 </h3>
-                <div className="grid grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                   {THEME_OPTIONS.map((option) => {
                     const optionRgb = hexToRgb(option.color);
                     return (
                       <button
                         key={option.value}
                         onClick={() => setThemeColor(option.value)}
-                        className={`p-4 rounded-xl border-2 transition-all ${
+                        className={`p-3 sm:p-4 rounded-xl border-2 transition-all ${
                           themeColor === option.value
                             ? 'border-white bg-white/10 scale-105'
                             : 'hover:bg-white/5'
@@ -157,10 +157,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         }}
                       >
                         <div
-                          className="w-full h-12 rounded-lg mb-2"
+                          className="w-full h-10 sm:h-12 rounded-lg mb-2"
                           style={{ backgroundColor: option.color }}
                         />
-                        <p className="text-sm font-medium text-center" style={{ color: `rgba(${optionRgb.r}, ${optionRgb.g}, ${optionRgb.b}, 0.9)` }}>
+                        <p className="text-xs sm:text-sm font-medium text-center" style={{ color: `rgba(${optionRgb.r}, ${optionRgb.g}, ${optionRgb.b}, 0.9)` }}>
                           {option.label}
                         </p>
                       </button>
@@ -171,7 +171,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
               {/* Background Section */}
               <div>
-                <h3 className="text-lg font-semibold mb-4" style={{ color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.9)` }}>
+                <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4" style={{ color: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.9)` }}>
                   Background
                 </h3>
                 <div className="grid grid-cols-1 gap-3">

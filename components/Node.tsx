@@ -167,6 +167,18 @@ export function Node({ node, onEdit, camera, dragConstraints }: NodeProps) {
       }}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
+      onTouchStart={(e) => {
+        // Prevent canvas from receiving touch events when dragging nodes
+        e.stopPropagation();
+      }}
+      onTouchMove={(e) => {
+        // Prevent canvas from panning when dragging nodes
+        e.stopPropagation();
+      }}
+      onTouchEnd={(e) => {
+        // Prevent canvas from receiving touch end events
+        e.stopPropagation();
+      }}
       whileHover={{ scale: 1.05, cursor:"grab" }}
       whileTap={{ scale: 0.98 }}
       className={cn(
@@ -220,6 +232,7 @@ export function Node({ node, onEdit, camera, dragConstraints }: NodeProps) {
           {/* Edit button */}
           <button
             onClick={handleEdit}
+            onTouchStart={(e) => e.stopPropagation()}
             className="p-2 rounded-lg backdrop-blur-md shadow-lg transition-all duration-200"
             style={{
               backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.9)`,
@@ -244,6 +257,7 @@ export function Node({ node, onEdit, camera, dragConstraints }: NodeProps) {
           {/* Connect button */}
           <button
             onClick={handleStartConnection}
+            onTouchStart={(e) => e.stopPropagation()}
             className="p-2 rounded-lg backdrop-blur-md shadow-lg transition-all duration-200"
             style={{
               backgroundColor: 'rgba(59, 130, 246, 0.9)',
@@ -267,6 +281,7 @@ export function Node({ node, onEdit, camera, dragConstraints }: NodeProps) {
           {/* Delete button */}
           <button
             onClick={handleDelete}
+            onTouchStart={(e) => e.stopPropagation()}
             className={`p-2 rounded-lg backdrop-blur-md shadow-lg transition-all duration-200 ${
               deleteConfirm ? 'ring-2 ring-red-300 ring-offset-2 ring-offset-transparent' : ''
             }`}

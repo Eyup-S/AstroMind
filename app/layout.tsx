@@ -15,6 +15,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Astro Mind - Space-Themed Mind Mapping",
   description: "A beautiful, interactive mind mapping application with a cosmic aesthetic. Create, connect, and explore your ideas in space.",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
 };
 
 export default function RootLayout({
