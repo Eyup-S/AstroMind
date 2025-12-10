@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MindMapNode } from '@/lib/types';
 import { useMindMapStore } from '@/lib/store';
@@ -13,12 +13,16 @@ interface NodeProps {
   onEdit: (node: MindMapNode) => void;
   camera: { x: number; y: number; zoom: number };
   dragConstraints?: React.RefObject<HTMLDivElement | null>;
+  onDragUpdate: (nodeId: string, offset: { x: number; y: number }) => void;
+  onDragComplete: (nodeId: string) => void;
 }
 
-export function Node({ node, onEdit, camera, dragConstraints }: NodeProps) {
+export function Node({ node, onEdit, camera, dragConstraints, onDragUpdate, onDragComplete }: NodeProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const rafIdRef = useRef<number | null>(null);
+  const pendingOffsetRef = useRef<{ x: number; y: number } | null>(null);
   const {
     selectedNodeId,
     setSelectedNode,
@@ -142,8 +146,32 @@ export function Node({ node, onEdit, camera, dragConstraints }: NodeProps) {
           setIsDragging(true);
           setShowTooltip(false);
         }}
+        onDrag={(_, info) => {
+          // Update drag offset in real-time for live edge rendering
+          // Use requestAnimationFrame to throttle updates to monitor refresh rate
+          const offsetX = info.offset.x / camera.zoom;
+          const offsetY = info.offset.y / camera.zoom;
+          pendingOffsetRef.current = { x: offsetX, y: offsetY };
+
+          if (rafIdRef.current === null) {
+            rafIdRef.current = requestAnimationFrame(() => {
+              if (pendingOffsetRef.current) {
+                onDragUpdate(node.id, pendingOffsetRef.current);
+              }
+              rafIdRef.current = null;
+            });
+          }
+        }}
         onDragEnd={(_, info) => {
           setIsDragging(false);
+          // Cancel any pending animation frame
+          if (rafIdRef.current !== null) {
+            cancelAnimationFrame(rafIdRef.current);
+            rafIdRef.current = null;
+          }
+          pendingOffsetRef.current = null;
+          // Clear drag offset
+          onDragComplete(node.id);
           // Update position after drag ends
           // offset is in screen pixels, need to account for zoom
           const newX = node.position.x + info.offset.x / camera.zoom;

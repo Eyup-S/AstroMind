@@ -16,6 +16,7 @@ import { debounce } from './utils';
 
 interface MindMapStore extends AppState {
   connectionState: ConnectionState;
+
   // Map actions
   createNewMap: (name?: string) => void;
   setCurrentMap: (mapId: string) => void;

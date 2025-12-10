@@ -26,10 +26,27 @@ export function Canvas({ className, onNodeEdit }: CanvasProps) {
     edgeId: string;
     position: { x: number; y: number };
   } | null>(null);
+  const [nodeDragOffsets, setNodeDragOffsets] = useState<Map<string, { x: number; y: number }>>(new Map());
 
   const { maps, currentMapId, addNode, setSelectedNode, connectionState, updateEdge } =
     useMindMapStore();
   const { defaultNodeColor } = useSettingsStore();
+
+  const handleNodeDragUpdate = (nodeId: string, offset: { x: number; y: number }) => {
+    setNodeDragOffsets(prev => {
+      const next = new Map(prev);
+      next.set(nodeId, offset);
+      return next;
+    });
+  };
+
+  const handleNodeDragEnd = (nodeId: string) => {
+    setNodeDragOffsets(prev => {
+      const next = new Map(prev);
+      next.delete(nodeId);
+      return next;
+    });
+  };
 
   const currentMap = maps.find((m) => m.id === currentMapId);
 
@@ -220,6 +237,7 @@ export function Canvas({ className, onNodeEdit }: CanvasProps) {
             edges={currentMap.edges}
             nodes={currentMap.nodes}
             camera={{ x: 0, y: 0, zoom }}
+            nodeDragOffsets={nodeDragOffsets}
             onEdgeClick={(edgeId, position) => setEdgeColorPicker({ edgeId, position })}
           />
 
@@ -231,6 +249,8 @@ export function Canvas({ className, onNodeEdit }: CanvasProps) {
               onEdit={setEditingNode}
               camera={{ x: 0, y: 0, zoom }}
               dragConstraints={constraintsRef}
+              onDragUpdate={handleNodeDragUpdate}
+              onDragComplete={handleNodeDragEnd}
             />
           ))}
         </div>

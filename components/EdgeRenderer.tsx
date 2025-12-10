@@ -7,20 +7,25 @@ interface EdgeRendererProps {
   edges: MindMapEdge[];
   nodes: MindMapNode[];
   camera: { x: number; y: number; zoom: number };
+  nodeDragOffsets: Map<string, { x: number; y: number }>;
   onEdgeClick?: (edgeId: string, position: { x: number; y: number }) => void;
 }
 
-export function EdgeRenderer({ edges, nodes, camera, onEdgeClick }: EdgeRendererProps) {
+export function EdgeRenderer({ edges, nodes, camera, nodeDragOffsets, onEdgeClick }: EdgeRendererProps) {
   const { selectedEdgeId, setSelectedEdge } = useMindMapStore();
 
   const getNodeCenter = (nodeId: string) => {
     const node = nodes.find((n) => n.id === nodeId);
     if (!node) return { x: 0, y: 0 };
 
+    // Get drag offset if node is being dragged
+    const dragOffset = nodeDragOffsets.get(nodeId) || { x: 0, y: 0 };
+
     // Center of circular node (140x140, so center is at +70, +70)
+    // Add drag offset for real-time edge updates
     return {
-      x: node.position.x + 70,
-      y: node.position.y + 70
+      x: node.position.x + 70 + dragOffset.x,
+      y: node.position.y + 70 + dragOffset.y
     };
   };
 
