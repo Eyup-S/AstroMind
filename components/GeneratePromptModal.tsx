@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { experimental_useObject as useObject } from '@ai-sdk/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSettingsStore, getThemeColor } from '@/lib/settingsStore';
-import { useAIStore, AVAILABLE_MODELS } from '@/lib/aiStore';
+import { useAIStore, AVAILABLE_MODELS, OPENROUTER_MODELS, ANTHROPIC_MODELS, AIProvider } from '@/lib/aiStore';
 import { useMindMapStore } from '@/lib/store';
 import { mindMapSchema, type GeneratedMindMap } from '@/lib/mindMapSchema';
 import { MindMapPreview } from './MindMapPreview';
@@ -27,7 +27,7 @@ export function GeneratePromptModal({ isOpen, onClose }: GeneratePromptModalProp
 
   const { themeColor } = useSettingsStore();
   const currentThemeColor = getThemeColor(themeColor);
-  const { apiKey, selectedModel, setApiKey, setSelectedModel } = useAIStore();
+  const { provider, apiKey, anthropicApiKey, selectedModel, setProvider, setApiKey, setAnthropicApiKey, setSelectedModel } = useAIStore();
   const { importMap } = useMindMapStore();
 
   const { object, submit, isLoading, stop } = useObject({
@@ -52,6 +52,16 @@ export function GeneratePromptModal({ isOpen, onClose }: GeneratePromptModalProp
   };
 
   const rgb = hexToRgb(currentThemeColor);
+
+  // Update selected model when provider changes to ensure it's valid for the current provider
+  useEffect(() => {
+    const currentProviderModels = provider === 'anthropic' ? ANTHROPIC_MODELS : OPENROUTER_MODELS;
+    const isModelValid = currentProviderModels.some(model => model.id === selectedModel);
+
+    if (!isModelValid && currentProviderModels.length > 0) {
+      setSelectedModel(currentProviderModels[0].id);
+    }
+  }, [provider, selectedModel, setSelectedModel]);
 
   // Convert file to base64
   const fileToBase64 = (file: File): Promise<string> => {
@@ -133,17 +143,21 @@ export function GeneratePromptModal({ isOpen, onClose }: GeneratePromptModalProp
 
   const handleGenerate = () => {
     if (!userInput.trim() && !pdfData) return;
-    if (!apiKey) {
+
+    // Check for the appropriate API key based on provider
+    const currentApiKey = provider === 'anthropic' ? anthropicApiKey : apiKey;
+    if (!currentApiKey) {
       setViewState('settings');
       return;
     }
 
     setError('');
     setViewState('generating');
-    submit({ 
-      prompt: userInput || 'Create a comprehensive mind map from this document.', 
-      apiKey, 
+    submit({
+      prompt: userInput || 'Create a comprehensive mind map from this document.',
+      apiKey: currentApiKey,
       model: selectedModel,
+      provider,
       pdfData: pdfData || undefined,
       pdfName: pdfFile?.name || undefined,
     });
@@ -213,7 +227,8 @@ export function GeneratePromptModal({ isOpen, onClose }: GeneratePromptModalProp
   };
 
   const handleSaveSettings = () => {
-    if (apiKey) {
+    const currentApiKey = provider === 'anthropic' ? anthropicApiKey : apiKey;
+    if (currentApiKey) {
       setViewState('input');
     }
   };
@@ -335,7 +350,7 @@ export function GeneratePromptModal({ isOpen, onClose }: GeneratePromptModalProp
             onChange={(e) => setSelectedModel(e.target.value)}
             className="flex-1 bg-transparent border-none text-slate-200 text-sm focus:outline-none cursor-pointer hover:text-white transition-colors"
           >
-            {AVAILABLE_MODELS.map((model) => (
+            {(provider === 'anthropic' ? ANTHROPIC_MODELS : OPENROUTER_MODELS).map((model) => (
               <option key={model.id} value={model.id} className="bg-slate-900">
                 {model.name}
               </option>
@@ -367,7 +382,7 @@ export function GeneratePromptModal({ isOpen, onClose }: GeneratePromptModalProp
           </motion.div>
         )}
 
-        {!apiKey && (
+        {!apiKey && !anthropicApiKey && (
           <div
             className="mt-6 p-4 rounded-xl text-sm flex items-start gap-3"
             style={{
@@ -379,7 +394,7 @@ export function GeneratePromptModal({ isOpen, onClose }: GeneratePromptModalProp
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
              </svg>
              <span className="text-slate-300">
-               Please configure your OpenRouter API key in settings to generate mind maps.
+               Please configure your API key in settings to generate mind maps.
              </span>
           </div>
         )}
@@ -495,48 +510,131 @@ export function GeneratePromptModal({ isOpen, onClose }: GeneratePromptModalProp
   const renderSettingsView = () => (
     <>
       <div className="p-8">
-        <h3 className="text-lg font-medium text-white mb-6">OpenRouter Configuration</h3>
+        <h3 className="text-lg font-medium text-white mb-6">AI Provider Configuration</h3>
 
         <div className="space-y-6">
+          {/* Provider Selection */}
           <div>
-            <label className="block text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2.5">API Key</label>
-            <div className="relative">
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="sk-or-v1-..."
-                className="w-full px-5 py-3.5 bg-slate-950/50 border border-slate-800 rounded-xl text-white focus:outline-none transition-all"
-                style={{ 
-                  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.5)`;
-                  e.currentTarget.style.boxShadow = `0 0 0 1px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1), inset 0 2px 4px rgba(0,0,0,0.1)`;
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = '';
-                  e.currentTarget.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.1)';
-                }}
-              />
-            </div>
-            <p className="text-slate-500 text-xs mt-3 flex items-center gap-1.5">
-              <span>Get your key from</span>
-              <a
-                href="https://openrouter.ai/keys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline font-medium transition-colors"
-                style={{ color: currentThemeColor }}
+            <label className="block text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2.5">Provider</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setProvider('openrouter')}
+                className={`px-4 py-3 rounded-xl border transition-all ${
+                  provider === 'openrouter'
+                    ? 'border-purple-500 bg-purple-500/10 text-white'
+                    : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700'
+                }`}
               >
-                openrouter.ai/keys
-              </a>
-              <svg className="w-3 h-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
-            </p>
+                <div className="flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span className="text-sm font-medium">OpenRouter</span>
+                </div>
+              </button>
+              <button
+                onClick={() => setProvider('anthropic')}
+                className={`px-4 py-3 rounded-xl border transition-all ${
+                  provider === 'anthropic'
+                    ? 'border-purple-500 bg-purple-500/10 text-white'
+                    : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:border-slate-700'
+                }`}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                  </svg>
+                  <span className="text-sm font-medium">Anthropic</span>
+                </div>
+              </button>
+            </div>
           </div>
 
+          {/* API Key for OpenRouter */}
+          {provider === 'openrouter' && (
+            <div>
+              <label className="block text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2.5">OpenRouter API Key</label>
+              <div className="relative">
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="sk-or-v1-..."
+                  className="w-full px-5 py-3.5 bg-slate-950/50 border border-slate-800 rounded-xl text-white focus:outline-none transition-all"
+                  style={{
+                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.5)`;
+                    e.currentTarget.style.boxShadow = `0 0 0 1px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1), inset 0 2px 4px rgba(0,0,0,0.1)`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '';
+                    e.currentTarget.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.1)';
+                  }}
+                />
+              </div>
+              <p className="text-slate-500 text-xs mt-3 flex items-center gap-1.5">
+                <span>Get your key from</span>
+                <a
+                  href="https://openrouter.ai/keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline font-medium transition-colors"
+                  style={{ color: currentThemeColor }}
+                >
+                  openrouter.ai/keys
+                </a>
+                <svg className="w-3 h-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </p>
+            </div>
+          )}
+
+          {/* API Key for Anthropic */}
+          {provider === 'anthropic' && (
+            <div>
+              <label className="block text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2.5">Anthropic API Key</label>
+              <div className="relative">
+                <input
+                  type="password"
+                  value={anthropicApiKey}
+                  onChange={(e) => setAnthropicApiKey(e.target.value)}
+                  placeholder="sk-ant-..."
+                  className="w-full px-5 py-3.5 bg-slate-950/50 border border-slate-800 rounded-xl text-white focus:outline-none transition-all"
+                  style={{
+                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.1)'
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.5)`;
+                    e.currentTarget.style.boxShadow = `0 0 0 1px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1), inset 0 2px 4px rgba(0,0,0,0.1)`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '';
+                    e.currentTarget.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.1)';
+                  }}
+                />
+              </div>
+              <p className="text-slate-500 text-xs mt-3 flex items-center gap-1.5">
+                <span>Get your key from</span>
+                <a
+                  href="https://console.anthropic.com/settings/keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline font-medium transition-colors"
+                  style={{ color: currentThemeColor }}
+                >
+                  console.anthropic.com
+                </a>
+                <svg className="w-3 h-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </p>
+            </div>
+          )}
+
+          {/* Model Selection */}
           <div>
              <label className="block text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2.5">Default Model</label>
             <div className="relative">
@@ -551,7 +649,7 @@ export function GeneratePromptModal({ isOpen, onClose }: GeneratePromptModalProp
                   e.currentTarget.style.borderColor = '';
                 }}
               >
-                {AVAILABLE_MODELS.map((model) => (
+                {(provider === 'anthropic' ? ANTHROPIC_MODELS : OPENROUTER_MODELS).map((model) => (
                   <option key={model.id} value={model.id} className="bg-slate-900">
                     {model.name}
                   </option>
@@ -576,9 +674,9 @@ export function GeneratePromptModal({ isOpen, onClose }: GeneratePromptModalProp
         </button>
         <button
           onClick={handleSaveSettings}
-          disabled={!apiKey}
+          disabled={provider === 'openrouter' ? !apiKey : !anthropicApiKey}
           className="px-6 py-2.5 text-white text-sm font-medium rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl active:scale-95"
-          style={{ 
+          style={{
             backgroundColor: currentThemeColor,
             boxShadow: `0 4px 12px -2px rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`
           }}

@@ -1,23 +1,25 @@
 import { streamObject } from 'ai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { createAnthropic } from '@ai-sdk/anthropic';
 import { mindMapSchema } from '@/lib/mindMapSchema';
 import { NextRequest } from 'next/server';
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
-  const { prompt, apiKey, model, pdfData, pdfName } = await req.json();
+  const { prompt, apiKey, model, pdfData, pdfName, provider } = await req.json();
 
-  if (!prompt || !apiKey || !model) {
+  if (!prompt || !apiKey || !model || !provider) {
     return new Response(JSON.stringify({ error: 'Missing required fields' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  const openrouter = createOpenRouter({
-    apiKey,
-  });
+  // Create the appropriate provider instance
+  const aiProvider = provider === 'anthropic'
+    ? createAnthropic({ apiKey })
+    : createOpenRouter({ apiKey });
 
   const systemPrompt = `You are a mind map generator for Astro Mind, a visual mind mapping application.
 
@@ -63,7 +65,7 @@ ${pdfData ? '- The user has attached a PDF document. Analyze its content and cre
   ];
 
   const result = streamObject({
-    model: openrouter.chat(model),
+    model: provider === 'anthropic' ? aiProvider(model) : aiProvider.chat(model),
     schema: mindMapSchema,
     system: systemPrompt,
     messages,
