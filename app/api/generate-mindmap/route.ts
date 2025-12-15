@@ -28,10 +28,29 @@ Generate a structured mind map based on the user's request. Follow these guideli
 - Use shortNote for brief summaries and details for comprehensive content
 - Choose appropriate colors for different categories (use hex codes like #8b5cf6, #3b82f6, #10b981, #f59e0b, #ef4444, #ec4899)
 - Use varied node variants: "default", "rounded", "pill", "outline"
-- Position nodes in a readable layout (x: 100-1000, y: 100-600), spreading them out to avoid overlap
 - Connect related nodes with edges using from/to node IDs
 - Generate unique IDs for all nodes and edges (use descriptive slugs like "node-main-topic", "edge-1-2")
-- Create a hierarchical or network structure based on the topic
+
+CRITICAL LAYOUT RULES - RADIAL/CIRCULAR DESIGN:
+- Each node is 140x140 pixels in size
+- ALWAYS place the root/main node at the CENTER: x: 650, y: 400
+- Distribute other nodes in a CIRCULAR/RADIAL pattern around the root node at 360 degrees
+- Use multiple concentric circles for different levels:
+  * First level (direct children): 300-350px radius from center
+  * Second level (sub-nodes): 550-600px radius from center
+  * Third level (if needed): 800px+ radius from center
+- Spread nodes evenly around the circle to avoid clustering
+- Example positions for 6 first-level nodes around center (650, 400):
+  * Node at 0°: (950, 400) - right
+  * Node at 60°: (825, 225) - top-right
+  * Node at 120°: (525, 225) - top-left
+  * Node at 180°: (350, 400) - left
+  * Node at 240°: (525, 575) - bottom-left
+  * Node at 300°: (825, 575) - bottom-right
+- Minimum spacing between any two nodes: 250 pixels
+- Valid x range: 100-1200, valid y range: 50-750
+- Calculate positions using: x = centerX + radius * cos(angle), y = centerY + radius * sin(angle)
+- Dont use hierarchical top-to-bottom layouts unless specifically requested
 ${pdfData ? '- The user has attached a PDF document. Analyze its content and create a mind map that captures the key concepts, structure, and relationships from the document.' : ''}`;
 
   // Build the messages array with optional PDF file
